@@ -49,7 +49,19 @@ Usage Examples:
 	branches = append(branches, branch)
  }
 
-		fmt.Println("gitClean called")
+ if len(branches) == 0{
+	fmt.Println(" No merged branches found to delete.")
+	return
+ }
+		fmt.Println("Merged branches:")
+		for _, branch := range branches{
+			fmt.Println("-",branch)
+		}
+
+		var confirm string
+		fmt.Print("Do you want to delete these branches? (y/N): ")
+		fmt.Scanln(&confirm)
+
 	},
 }
 
