@@ -62,19 +62,26 @@ Usage Examples:
 		fmt.Print("Do you want to delete these branches? (y/N): ")
 		fmt.Scanln(&confirm)
 
+
+		if strings.ToLower(confirm) != "y"{
+fmt.Println("Cancelled. No branches were deleted.")
+return
+		}
+
+		for _,branch:= range branches{
+			fmt.Println("Deleting branch:",branch)
+			cmd := exec.Command("git","branch","-d",branch)
+			err := cmd.Run()
+			if err != nil{
+				fmt.Printf("Error deleting branch %s: %v\n",branch,err)
+			}
+		}
+		fmt.Println("Cleanup complete!")
+
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(gitCleanCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// gitCleanCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// gitCleanCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
