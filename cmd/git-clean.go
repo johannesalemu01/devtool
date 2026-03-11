@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// gitCleanCmd represents the gitClean command
-var gitCleanCmd = &cobra.Command{
-	Use:   "git-clean",
+// cleanBranchesCmd represents the clean-branches command
+var cleanBranchesCmd = &cobra.Command{
+	Use:   "clean-branches",
 	Short: "Delete merged git branches",
 	Long: `Git Clean is a tool to automatically list and remove
 merged Git branches in your repository.
@@ -27,10 +27,10 @@ It will:
 Usage Examples:
 
   # List merged branches and delete them
-  devtool git-clean
+  devtool clean-branches
 
   # Dry run (if implemented)
-  devtool git-clean --dry-run
+  devtool clean-branches --dry-run
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		output, err := exec.Command("git", "branch", "--merged").Output()
@@ -81,5 +81,5 @@ Usage Examples:
 }
 
 func init() {
-	rootCmd.AddCommand(gitCleanCmd)
+	rootCmd.AddCommand(cleanBranchesCmd)
 }

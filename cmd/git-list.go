@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// gitListCmd represents the git-list command
-var gitListCmd = &cobra.Command{
-	Use:   "git-list",
+// listBranchesCmd represents the list-branches command
+var listBranchesCmd = &cobra.Command{
+	Use:   "list-branches",
 	Short: "List merged and Unmerged branches",
 	Long: `Git List shows all local git branches and separates
 them into merged and unmerged branches for easier cleanup.
@@ -21,7 +21,7 @@ them into merged and unmerged branches for easier cleanup.
 Usage Examples:
 
   # List branches
-  devtool git-list
+  devtool list-branches
 `,
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -77,5 +77,5 @@ Usage Examples:
 }
 
 func init() {
-	rootCmd.AddCommand(gitListCmd)
+	rootCmd.AddCommand(listBranchesCmd)
 }
