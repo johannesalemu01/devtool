@@ -92,5 +92,15 @@ for _,pr := range prs{
 page ++
 		}
 	}
+	//3 NOTE PRINT TABLE
+	fmt.Printf("%-20s %-8s %-8s %-8s %-8s\n", "Name", "Commits", "Merged", "Rejected", "Open")
+		fmt.Println(strings.Repeat("-", 60))
+		for _,c := range contributors {
+			fmt.Printf("%-20s %-8d %-8d %-8d %-8d\n", c.Name, c.Commits, c.Merged, c.Rejected, c.Open)
+		}
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(contributorsCmd)
 }
