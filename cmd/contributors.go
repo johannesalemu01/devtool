@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,76 +27,115 @@ var contributorsCmd = &cobra.Command{
 	Long: `The contributors command fetches and displays the top contributors to the repository along with their pull request statistics. It shows the number of merged and rejected pull requests for each contributor, giving insights into their contributions and impact on the project.`,
 	Run:func(cmd *cobra.Command, args []string){
  
-		//NOTE 1 GET COMMMIT COUNTS PER AUTHOR
-		out ,err := exec.Command ("git","shortlog","-sn").Output()
-		if err !=nil{
-			fmt.Printf("Error: Make sure you are inside a git repository?")
+		// 1. Get commit counts per author using git shortlog
+		gitCmd := exec.Command("git", "shortlog", "-sn", "HEAD")
+		var stdout, stderr bytes.Buffer
+		gitCmd.Stdout = &stdout
+		gitCmd.Stderr = &stderr
+		
+		if err := gitCmd.Run(); err != nil {
+			fmt.Printf("Error running git shortlog: %v\n", err)
+			fmt.Printf("Stderr: %s\n", stderr.String())
 			return
 		}
 
-		lines:= strings.Split(string(out),"\n")
-		type Contributor struct{
-Name string
-Commits int
-Merged int
-Rejected int
-Open int
+		outputStr := stdout.String()
+		lines := strings.Split(outputStr, "\n")
+		
+		type Contributor struct {
+			Name     string
+			Commits  int
+			Merged   int
+			Rejected int
+			Open     int
 		}
 
-		contributors:=[]Contributor{}
+		contributors := []Contributor{}
 
-		for _,line:=range lines{
-			if strings.TrimSpace(line) == ""{
+		for _, line := range lines {
+			trimmedLine := strings.TrimSpace(line)
+			if trimmedLine == "" {
 				continue
 			}
-			parts:= strings.Fields(line) 
-			commits:=0
-			fmt.Sscanf(parts[0],"%d", &commits)
-			name:= strings.Join(parts[1:]," ")
+			parts := strings.Fields(trimmedLine)
+			if len(parts) < 2 {
+				continue
+			}
+			commits := 0
+			_, err := fmt.Sscanf(parts[0], "%d", &commits)
+			if err != nil {
+				continue
+			}
+			name := strings.Join(parts[1:], " ")
 			contributors = append(contributors, Contributor{Name: name, Commits: commits})
 		}
-		//NOTE 2 FETCH PRs FROM 	GITHUB
-		token:= os.Getenv("GITHUB_TOKEN")
-		owner:= os.Getenv("REPO_OWNER")
-		repo:= os.Getenv("REPO_NAME")
 
-		if token == "" || owner == "" || repo == ""{
-			fmt.Println("Warning: githib stats disabled. Set GITHUB_TOKEN, Repo_Owner and REPO_NAME env variables to see merged/rejected PRs")
-		}else {
-			client:= &http.Client{}
+		// 2. Fetch PRs from GitHub if credentials are provided
+		token := os.Getenv("GITHUB_TOKEN")
+		owner := os.Getenv("REPO_OWNER")
+		repo := os.Getenv("REPO_NAME")
+
+		if token == "" || owner == "" || repo == "" {
+			fmt.Println("Note: GitHub stats are disabled. Set GITHUB_TOKEN, REPO_OWNER, and REPO_NAME environment variables to see PR statistics.")
+		} else {
+			client := &http.Client{}
 			page := 1
-			 for{
-url:= fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?state=all&per_page=100&page=%d", owner, repo, page)
-req, _ := http.NewRequest("GET", url, nil)
-req.Header.Set("Authorization","token"+token)
-resp,_:= client.Do(req)
-defer resp.Body.Close()
+			for {
+				url := fmt.Sprintf("https://api.github.com/repos/%s/%s/pulls?state=all&per_page=100&page=%d", owner, repo, page)
+				req, _ := http.NewRequest("GET", url, nil)
+				req.Header.Set("Authorization", "Bearer "+token)
+				resp, err := client.Do(req)
+				if err != nil {
+					fmt.Printf("Error fetching PRs: %v\n", err)
+					break
+				}
+				
+				if resp.StatusCode != http.StatusOK {
+					fmt.Printf("Error: Received status %d from GitHub API\n", resp.StatusCode)
+					resp.Body.Close()
+					break
+				}
 
-var prs []PullRequest
-json.NewDecoder(resp.Body).Decode(&prs)
-if len(prs) == 0 {
-	break
-}
-for _,pr := range prs{
-	for i:= range contributors{
-		if strings.EqualFold(pr.User.Login, contributors[i].Name){
-			if pr.State== "open"{
-				contributors[i].Open++
-			}else if pr.Merged{
-				contributors[i].Merged++
-			}else {
-				contributors[i].Rejected++
+				var prs []PullRequest
+				if err := json.NewDecoder(resp.Body).Decode(&prs); err != nil {
+					resp.Body.Close()
+					break
+				}
+				resp.Body.Close()
+
+				if len(prs) == 0 {
+					break
+				}
+				
+				for _, pr := range prs {
+					for i := range contributors {
+						// Note: Many developers use different names in Git vs GitHub login.
+						// This simple check works if they match, but in a real tool you'd want a mapping.
+						if strings.EqualFold(pr.User.Login, contributors[i].Name) {
+							if pr.State == "open" {
+								contributors[i].Open++
+							} else if pr.Merged {
+								contributors[i].Merged++
+							} else {
+								contributors[i].Rejected++
+							}
+						}
+					}
+				}
+				page++
 			}
 		}
-	}
-}
-page ++
-		}
-	}
-	//3 NOTE PRINT TABLE
-	fmt.Printf("%-20s %-8s %-8s %-8s %-8s\n", "Name", "Commits", "Merged", "Rejected", "Open")
+
+		// 3. Print the results in a formatted table
+		fmt.Printf("\n%-20s %-8s %-8s %-8s %-8s\n", "Name", "Commits", "Merged", "Rejected", "Open")
 		fmt.Println(strings.Repeat("-", 60))
-		for _,c := range contributors {
+		
+		if len(contributors) == 0 {
+			fmt.Println("No contributors found. Make sure you are in a git repository with commits.")
+			return
+		}
+		
+		for _, c := range contributors {
 			fmt.Printf("%-20s %-8d %-8d %-8d %-8d\n", c.Name, c.Commits, c.Merged, c.Rejected, c.Open)
 		}
 	},
