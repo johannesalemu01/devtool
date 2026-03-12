@@ -38,7 +38,7 @@ var contributorsCmd = &cobra.Command{
 Name string
 Commits int
 Merged int
-Rejecred int
+Rejected int
 Open int
 		}
 
@@ -76,7 +76,20 @@ json.NewDecoder(resp.Body).Decode(&prs)
 if len(prs) == 0 {
 	break
 }
-page++
+for _,pr := range prs{
+	for i:= range contributors{
+		if strings.EqualFold(pr.User.Login, contributors[i].Name){
+			if pr.State== "open"{
+				contributors[i].Open++
+			}else if pr.Merged{
+				contributors[i].Merged++
+			}else {
+				contributors[i].Rejected++
+			}
+		}
+	}
+}
+page ++
 		}
 	}
 	},
