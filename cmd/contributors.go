@@ -129,6 +129,14 @@ var contributorsCmd = &cobra.Command{
 		}
 
 		ui.ContributorTable(contributors)
+
+		// Interactive selection
+		selected, err := ui.SelectContributor(contributors)
+		if err != nil {
+			return
+		}
+
+		ui.ShowContributorDetails(*selected)
 	},
 }
 
