@@ -7,10 +7,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var headerStyle = lipgloss.NewStyle().
+var HeaderStyle = lipgloss.NewStyle().
 	Bold(true).
 	Foreground(lipgloss.Color("#00FF87")).
 	Padding(0, 1)
+
+var BoldStyle = lipgloss.NewStyle().Bold(true)
 
 var tableStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder()).
@@ -35,7 +37,7 @@ type Contributor struct {
 }
 
 func ContributorTable(contributors []Contributor) {
-	fmt.Println(headerStyle.Render("📊 Repository Contributors"))
+	fmt.Println(HeaderStyle.Render("📊 Repository Contributors"))
 
 	table := ""
 	table += fmt.Sprintf("%-20s %-10s %-10s %-10s %-10s\n", "NAME", "COMMITS", "MERGED", "REJECTED", "OPEN")

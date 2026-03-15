@@ -35,7 +35,7 @@ func SelectContributor(contributors []Contributor) (*Contributor, error) {
 }
 
 func ShowContributorDetails(c Contributor) {
-	title := headerStyle.Render(fmt.Sprintf("Details for %s", c.Name))
+	title := HeaderStyle.Render(fmt.Sprintf("Details for %s", c.Name))
 	
 	details := fmt.Sprintf(
 		"Commits:    %d\nMerged PRs: %d\nRejected:   %d\nOpen:       %d",
