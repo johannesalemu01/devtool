@@ -28,6 +28,14 @@ var rejectedStyle = lipgloss.NewStyle().
 var openStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#FFFF00"))
 
+var SuccessStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#00FF87")).
+	Bold(true)
+
+var ErrorStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#FF0000")).
+	Bold(true)
+
 type Contributor struct {
 	Name     string
 	Commits  int
