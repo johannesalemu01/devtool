@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/johannesalemu01/devtool/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -66,15 +66,8 @@ var initCmd = &cobra.Command{
 		}
 
 		// 2. Scaffolding Logic
-		var scaffoldErr error
-		action := func() {
-			scaffoldErr = scaffold(framework, projectName)
-		}
-
-		_ = spinner.New().
-			Title(fmt.Sprintf("Scaffolding %s project: %s...", framework, projectName)).
-			Action(action).
-			Run()
+		fmt.Printf("🏗️  Scaffolding %s project: %s...\n", framework, projectName)
+		scaffoldErr := scaffold(framework, projectName)
 
 		if scaffoldErr != nil {
 			fmt.Printf("\n%s Error: %v\n", ui.ErrorStyle.Render("✗"), scaffoldErr)
@@ -87,44 +80,55 @@ var initCmd = &cobra.Command{
 }
 
 func scaffold(framework, name string) error {
-	// ... existing scaffold logic ...
 	switch framework {
 	case "go":
 		if err := os.MkdirAll(name, 0755); err != nil {
 			return err
 		}
-		cmd := exec.Command("go", "mod", "init", name)
-		cmd.Dir = name
-		return cmd.Run()
+		return runCmd(name, "go", "mod", "init", name)
 
 	case "node":
 		if err := os.MkdirAll(name, 0755); err != nil {
 			return err
 		}
-		cmd := exec.Command("npm", "init", "-y")
-		cmd.Dir = name
-		return cmd.Run()
+		return runCmd(name, "npm", "init", "-y")
 
 	case "react":
-		// Using Vite for React
-		return exec.Command("npm", "create", "vite@latest", name, "--", "--template", "react").Run()
+		return runCmd("", "sh", "-c", fmt.Sprintf("npm create vite@latest %s -- --template react --no-interactive", name))
 
 	case "next":
-		// Non-interactive next app creation
-		return exec.Command("npx", "create-next-app@latest", name, "--ts", "--eslint", "--tailwind", "--app", "--src-dir", "import-alias", "@/*", "--use-npm").Run()
+		// Added --no-react-compiler and ensured --yes is present
+		cmdStr := fmt.Sprintf("npx --yes create-next-app@latest %s --typescript --tailwind --eslint --app --use-npm --no-src-dir --no-react-compiler --import-alias '@/*' --yes", name)
+		return runCmd("", "sh", "-c", cmdStr)
 
 	case "laravel":
-		return exec.Command("composer", "create-project", "laravel/laravel", name).Run()
+		return runCmd("", "composer", "create-project", "laravel/laravel", name)
 
 	case "nuxt":
-		return exec.Command("npx", "nuxi@latest", "init", name).Run()
+		return runCmd("", "sh", "-c", fmt.Sprintf("npx --yes nuxi@latest init %s --packageManager npm --no-install", name))
 
 	case "vue":
-		return exec.Command("npm", "create", "vite@latest", name, "--", "--template", "vue").Run()
+		return runCmd("", "sh", "-c", fmt.Sprintf("npm create vite@latest %s -- --template vue --no-interactive", name))
 
 	default:
 		return fmt.Errorf("unsupported framework: %s", framework)
 	}
+}
+
+func runCmd(dir string, name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	
+	if dir != "" {
+		absDir, _ := filepath.Abs(dir)
+		cmd.Dir = absDir
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	
+	// Inherit environment automatically
+	return cmd.Run()
 }
 
 func init() {
